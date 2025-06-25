@@ -10,7 +10,7 @@ async def main():
 
     result = await client.execute_workflow(
         ParentWorkflow.run,
-        [1, 2],
+        [1, 2, 3, 4, 5, 6, 7],
         id="parent-and-child-workflow-id",
         task_queue="parent-and-child-task-queue",
     )
