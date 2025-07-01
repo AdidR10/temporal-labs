@@ -1,4 +1,4 @@
-from temporalio import activity # type: ignore
+from temporalio import activity
 
 @activity.defn
 async def say_hello(name: str) -> str:

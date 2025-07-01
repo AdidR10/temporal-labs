@@ -1,8 +1,8 @@
 import asyncio
 from temporalio.client import Client # type: ignore
 from temporalio.worker import Worker # type: ignore
-from hello_workflow import GreetingWorkflow
-from hello_activity import compose_greeting
+from greeting_workflow import GreetingWorkflow
+from compose_greeting_activity import compose_greeting
 
 async def main():
     # Connect to Temporal server

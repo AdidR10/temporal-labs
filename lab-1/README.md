@@ -1,80 +1,88 @@
-# Temporal Lab for Beginners
+# Lab 1: Introduction to Temporal
 
-## Introduction to Temporal
+## 🎯 Learning Objectives
 
-Temporal is an open-source workflow orchestration platform designed to build and manage durable, scalable, and fault-tolerant applications. It allows developers to write complex business logic as workflows that can span days, weeks, or even months, with built-in features like retries, timeouts, and state management. Temporal is particularly useful for microservices, serverless architectures, and long-running processes.
+By the end of this lab, you will be able to:
+- **Understand Temporal architecture**: Learn the core components and how they work together
+- **Set up Temporal server**: Deploy Temporal using Docker Compose in Poridhi Lab
+- **Explore the Web UI**: Navigate Temporal's dashboard and understand its features
+- **Use Temporal CLI**: Execute commands to manage namespaces and server operations
+- **Configure load balancers**: Set up external access for monitoring in Poridhi Lab
+- **Work with namespaces**: Create and manage isolated environments for applications
 
-### Three Basic Components of Temporal
-1. **Workflow**: The core unit of execution that defines the business logic and sequence of tasks. Workflows are durable, meaning their state is preserved and can be recovered even if a process fails.
-2. **Activity**: Individual tasks or units of work within a workflow, such as calling an API, processing data, or sending an email. Activities are executed by workers and can be retried if they fail.
-3. **Worker**: A process that runs workflow and activity code, polling the Temporal Server for tasks and executing them. Workers are typically written using a Temporal SDK (e.g., in Go, Java, or Python).
+## 📚 Background
 
-Understanding these components is key to leveraging Temporal’s architecture. This lab will help you set up a basic Temporal environment and explore its features.
+### What is Temporal?
+Temporal is an **open-source workflow orchestration platform** designed to build durable, scalable, and fault-tolerant applications. It enables developers to write complex business logic as workflows that can run for days, weeks, or even months, with built-in reliability features.
 
-## Lab Goals
-The purpose of this lab is to:
-- Understand Temporal's architecture and its basic components.
-- Set up a Temporal Server using Docker Compose.
-- Explore the Web UI at `localhost:8233`.
-- Register a namespace using the Temporal CLI.
+### Why Use Temporal?
+- **Durability**: Workflows survive failures and restarts
+- **Reliability**: Automatic retries and error handling
+- **Scalability**: Distribute work across multiple workers
+- **Visibility**: Rich monitoring and debugging capabilities
+- **Simplicity**: Complex distributed logic written as simple code
 
-This simple lab uses only the `temporalio/admin-tools` Docker image, which includes the Temporal Server, CLI commands, and a minimal functioning Web UI, making it ideal for beginners without the complexity of additional databases or services.
+### Core Architecture Components
 
+| Component | Purpose | Key Features |
+|-----------|---------|--------------|
+| **Temporal Server** | Central orchestration engine | Stores workflow state, manages task queues |
+| **Workflow** | Durable business logic | Defines process flow, handles failures |
+| **Activity** | Individual task execution | Stateless operations, can be retried |
+| **Worker** | Code execution environment | Polls for tasks, executes workflows/activities |
+| **Web UI** | Monitoring dashboard | Visualize executions, debug issues |
+| **CLI** | Command-line interface | Server management, namespace operations |
 
-# Introduction to Temporal - Docker Setup
+### Temporal Ecosystem Flow
+1. **Client** starts a workflow
+2. **Temporal Server** stores workflow state and creates tasks
+3. **Worker** polls for tasks and executes workflow/activity code
+4. **Web UI** provides visibility into all executions
+5. **CLI** enables administrative operations
 
-This project demonstrates how to set up and explore Temporal's workflow orchestration platform using Docker Compose. Temporal is a durable workflow execution platform that helps build reliable distributed applications.
+## 🛠 Prerequisites
 
+### Poridhi Lab Environment:
+- Access to Poridhi Lab with VS Code interface
+- **Docker & Docker Compose**: ✅ Pre-installed in Poridhi Lab
+- **Web Browser**: For accessing the Temporal Web UI through load balancer
+- **Terminal Access**: Available through VS Code integrated terminal
 
-## 🚀 Quick Start
-
-### Create Docker Compose File
-
-Create a `docker-compose.yml` file with the following content:
-
-```yaml
-version: '3.8'
-
-services:
-  temporal:
-    image: temporalio/admin-tools:latest
-    ports:
-      - "7233:7233"
-      - "8233:8233"
-    entrypoint: []
-    command: ["temporal", "server", "start-dev", "--ui-port", "8233", "--ip", "0.0.0.0"]
-```
-
-### Start Temporal Server
-
+### Verify Prerequisites
 ```bash
-# Start Temporal using Docker Compose
-docker-compose up
-
-# Or run in background
-docker-compose up -d
+# Open VS Code terminal and verify Docker installation
+docker --version
+docker-compose --version
+docker ps
 ```
-
-
-### Access Web UI
-
-Open your browser and navigate to:
-http://localhost:8233
-
-You should see the Temporal Web UI dashboard.
 
 ## 📁 Project Structure
 
+You'll create the following structure in your lab-1 directory:
+
 ```
-temporal-docker-setup/
-├── docker-compose.yml      # Docker Compose configuration
-├── README.md              # This file
-└── examples/              # Sample workflows (optional)
+lab-1/
+├── docker-compose.yml      # Temporal server configuration
+└── README.md              # This documentation
 ```
 
-## 🔧 Configuration Details
+## 🚀 Lab Implementation
 
-### Docker Compose Configuration
+### Step 1: Set Up Project Structure
+
+Open VS Code terminal in Poridhi Lab and navigate to your lab-1 directory:
+
+```bash
+# Navigate to lab-1 directory
+cd lab-1
+
+# Verify you're in the correct location
+pwd
+```
+
+### Step 2: Create Docker Compose Configuration
+
+Create `docker-compose.yml` in the lab-1 directory:
 
 ```yaml
 version: '3.8'
@@ -83,51 +91,93 @@ services:
   temporal:
     image: temporalio/admin-tools:latest
     ports:
-      - "7233:7233"
-      - "8233:8233"
+      - "7233:7233"  # Temporal Server API
+      - "8233:8233"  # Web UI Dashboard
     entrypoint: []
     command: ["temporal", "server", "start-dev", "--ui-port", "8233", "--ip", "0.0.0.0"]
 ```
 
-### Configuration Breakdown:
+#### Configuration Explanation:
+- **Image**: `temporalio/admin-tools:latest` - Includes Temporal server, CLI, and Web UI
+- **Port 7233**: Temporal Server API endpoint for client connections
+- **Port 8233**: Web UI dashboard for monitoring and debugging
+- **start-dev**: Development mode with in-memory storage (perfect for learning)
+- **--ip 0.0.0.0**: Binds to all interfaces for Docker networking
 
-- **Image**: `temporalio/admin-tools:latest` - Official Temporal tools image with CLI included
-- **Ports**:
-  - `7233`: Temporal Server API endpoint
-  - `8233`: Web UI dashboard
-- **Entrypoint**: Cleared to override default behavior
-- **Command**: Starts Temporal in development mode with Web UI
+### Step 3: Deploy Temporal Server
 
-### Why These Settings?
+```bash
+# Start Temporal server
+docker-compose up -d
 
-- `--ui-port 8233`: Specifies Web UI port
-- `--ip 0.0.0.0`: Binds to all interfaces (required for Docker port mapping)
-- `start-dev`: Uses in-memory database (perfect for learning)
+# Verify container is running
+docker-compose ps
 
-## 🌐 Accessing Services
+# Check server logs
+docker-compose logs -f temporal
+```
 
-### Temporal Server
+Expected output: You should see Temporal server starting up with various initialization messages.
 
-- **URL**: http://localhost:7233
-- **Purpose**: API endpoint for workflow operations
-- **Test**: `curl http://localhost:7233/api/v1/namespaces`
+### Step 4: Configure Load Balancer for Web UI Access
 
-### Temporal Web UI
+#### Get Network Information
+```bash
+# Get your lab instance IP address
+ifconfig eth0
 
-- **URL**: http://localhost:8233
-- **Purpose**: Visual dashboard for monitoring workflows
-- **Features**:
-  - View workflow executions
-  - Monitor task queues
-  - Explore workflow history
-  - Debug failed workflows
+# Note the IP address for load balancer configuration
+```
 
-## 🏷 Working with Namespaces
+#### Set Up Load Balancer
+1. **Access Load Balancer Configuration** in Poridhi Lab interface
+2. **Create New Load Balancer**:
+   - **Enter IP**: Your lab instance eth0 IP address
+   - **Enter Port**: `8233`
+3. **Click Create**
 
-Namespaces provide isolation for different environments or applications. The Temporal CLI is already included in the Docker container.
+You'll receive a load balancer URL like:
+```
+https://[your-instance-id]-lb-[port].bm-southeast.lab.poridhi.io/
+```
 
-### View Default Namespace
+### Step 5: Explore the Web UI
 
+#### Access the Dashboard
+1. **Open Temporal Web UI**: Use your load balancer URL in a web browser
+2. **Explore the Interface**: You should see the Temporal dashboard with:
+   - Namespace selector (default: "default")
+   - Navigation sidebar with sections:
+     - **Workflows**: View workflow executions
+     - **Schedules**: Manage scheduled workflows
+     - **Task Queues**: Monitor work distribution
+     - **Cluster**: Server health and configuration
+
+#### Dashboard Features
+
+| Section | Purpose | What You'll See |
+|---------|---------|-----------------|
+| **Workflows** | Monitor workflow executions | Currently empty (no workflows yet) |
+| **Task Queues** | View work distribution | Shows available task queues |
+| **Namespaces** | Switch between environments | Default namespace pre-configured |
+| **Cluster** | Server health monitoring | Server status and metrics |
+
+### Step 6: Use Temporal CLI Commands
+
+The Temporal CLI is included in the Docker container. Let's explore key commands:
+
+#### Server Health Check
+```bash
+# Check if Temporal server is healthy
+docker-compose exec temporal temporal server health
+
+# Get server information
+docker-compose exec temporal temporal cluster health
+```
+
+#### Namespace Operations
+
+##### View Existing Namespaces
 ```bash
 # List all namespaces
 docker-compose exec temporal temporal namespace list
@@ -136,122 +186,244 @@ docker-compose exec temporal temporal namespace list
 docker-compose exec temporal temporal namespace describe --namespace default
 ```
 
-### Register a New Namespace
-
+##### Create a New Namespace
 ```bash
-# Register a new namespace
-docker-compose exec temporal temporal namespace register --namespace my-app
+# Register a new namespace for your application
+docker-compose exec temporal temporal namespace register --namespace my-lab-app
 
-# Register with retention period
+# Register with retention period and description
 docker-compose exec temporal temporal namespace register \
-  --namespace my-app \
+  --namespace production-app \
   --retention 72h \
-  --description "My application namespace"
+  --description "Production application namespace"
 ```
 
-### Namespace Operations
-
+##### Verify Namespace Creation
 ```bash
-# List all namespaces
+# List namespaces again to see your new ones
 docker-compose exec temporal temporal namespace list
 
-# Get namespace details
-docker-compose exec temporal temporal namespace describe --namespace my-app
-
-# Update namespace retention
-docker-compose exec temporal temporal namespace update \
-  --namespace my-app \
-  --retention 168h
+# Get details of your new namespace
+docker-compose exec temporal temporal namespace describe --namespace my-lab-app
 ```
 
-## 🔍 Exploring the Web UI
+### Step 7: Explore Namespaces in Web UI
 
-### Dashboard Overview
+1. **Refresh Web UI**: Go back to your load balancer URL
+2. **Switch Namespaces**: Use the namespace dropdown at the top
+3. **Observe Changes**: Notice how you can now select different namespaces:
+   - `default` (pre-existing)
+   - `my-lab-app` (created by you)
+   - `production-app` (if created)
 
-Navigate to http://localhost:8233
-Default view shows the namespace selector
+### Step 8: Advanced CLI Exploration
 
-**Key sections**:
-- Workflows: View running and completed workflows
-- Task Queues: Monitor work distribution
-- Namespaces: Switch between different environments
-- Cluster: Server health and configuration
+#### Task Queue Operations
+```bash
+# List task queues (will be empty until workflows are running)
+docker-compose exec temporal temporal task-queue list --namespace default
 
-### Web UI Features
+# Get task queue information
+docker-compose exec temporal temporal task-queue describe \
+  --task-queue sample-queue \
+  --namespace default
+```
 
-#### Workflow Monitoring
-- View workflow execution history
-- Monitor workflow status and progress
-- Inspect activity results and failures
-- Trace workflow execution timeline
+#### Server Configuration
+```bash
+# View server configuration
+docker-compose exec temporal temporal server config
 
-#### Task Queue Management
-- Monitor task queue health
-- View pending and completed tasks
-- Check worker connectivity
-- Analyze task processing metrics
+# Check server version
+docker-compose exec temporal temporal server --version
+```
 
-#### Namespace Management
-- Switch between namespaces
-- View namespace configuration
-- Monitor namespace-specific metrics
+## 🔍 Understanding the System
+
+### What You've Accomplished
+1. **Deployed Temporal Server**: Running in development mode with in-memory storage
+2. **Configured External Access**: Load balancer provides web access
+3. **Explored Web UI**: Learned about monitoring capabilities
+4. **Used CLI Tools**: Managed namespaces and server operations
+5. **Created Isolation**: Set up separate namespaces for different applications
+
+### System Architecture in Your Lab
+
+```
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│   Web Browser   │    │  Load Balancer   │    │  Temporal       │
+│                 │◄──►│                  │◄──►│  Server         │
+│  (Your Computer)│    │  (Poridhi Lab)   │    │  (Docker)       │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+                                                        │
+                                                        ▼
+                                               ┌─────────────────┐
+                                               │   Namespaces    │
+                                               │  - default      │
+                                               │  - my-lab-app   │
+                                               │  - production.. │
+                                               └─────────────────┘
+```
+
+### Key Concepts Demonstrated
+
+#### Namespaces
+- **Purpose**: Provide isolation between different applications or environments
+- **Benefits**: Separate development, staging, and production workflows
+- **Usage**: Switch between namespaces in Web UI or CLI
+
+#### Development Mode
+- **Storage**: In-memory (data lost on restart)
+- **Purpose**: Fast setup for learning and development
+- **Limitation**: Not suitable for production (use persistent storage)
+
+## 🧪 Experimentation
+
+### Try These Activities
+
+#### 1. Create Multiple Namespaces
+```bash
+# Create namespaces for different environments
+docker-compose exec temporal temporal namespace register --namespace development
+docker-compose exec temporal temporal namespace register --namespace staging
+docker-compose exec temporal temporal namespace register --namespace testing
+```
+
+#### 2. Namespace Management
+```bash
+# Update namespace retention
+docker-compose exec temporal temporal namespace update \
+  --namespace my-lab-app \
+  --retention 168h
+
+# Add description to existing namespace
+docker-compose exec temporal temporal namespace update \
+  --namespace development \
+  --description "Development environment for testing workflows"
+```
+
+#### 3. Explore Different Web UI Sections
+- Switch between namespaces and observe how the view changes
+- Check the Cluster section for server metrics
+- Explore the empty Workflows section (you'll fill this in later labs)
 
 ## 🔧 Troubleshooting
 
-### Common Issues and Solutions
+### Common Issues
 
-#### Container Won't Start
-
+#### Container Not Starting
 ```bash
 # Check container status
 docker-compose ps
 
 # View detailed logs
-docker-compose logs
+docker-compose logs temporal
+
+# Restart if needed
+docker-compose restart temporal
 ```
 
-🧹 Cleanup
-Stop Services
-# Stop containers
+#### Web UI Not Accessible
+```bash
+# Verify port binding
+docker-compose port temporal 8233
+
+# Test local access first
+curl http://localhost:8233
+
+# Check if container is running
+docker-compose ps
+```
+
+#### CLI Commands Not Working
+```bash
+# Verify container is running
+docker-compose ps
+
+# Check if you can enter the container
+docker-compose exec temporal sh
+
+# Test basic CLI connectivity
+docker-compose exec temporal temporal server health
+```
+
+### Load Balancer Issues
+
+#### Load Balancer Not Working
+```bash
+# Verify port 8233 is bound
+netstat -tlnp | grep :8233
+
+# Check Temporal service health
+curl http://localhost:8233
+
+# Restart services if needed
+docker-compose restart
+```
+
+## 📊 Web UI Deep Dive
+
+### Dashboard Navigation
+
+#### Workflows Section
+- **Purpose**: Monitor workflow executions
+- **Current State**: Empty (no workflows running yet)
+- **Future Use**: Will show workflow history in subsequent labs
+
+#### Task Queues Section
+- **Purpose**: Monitor work distribution
+- **What to Look For**: Available queues and worker connections
+- **Current State**: No active queues until workflows are deployed
+
+#### Namespaces Section
+- **Purpose**: Environment isolation and switching
+- **Practice**: Switch between your created namespaces
+- **Observation**: Notice how each namespace has independent state
+
+#### Cluster Section
+- **Purpose**: Server health and configuration monitoring
+- **Key Metrics**: 
+  - Server status
+  - Version information
+  - Connection details
+
+## 🧹 Cleanup
+
+### Stop Services
+```bash
+# Stop Temporal server
 docker-compose down
 
-# Stop and remove volumes (clears all data)
+# Remove volumes (clears all data)
 docker-compose down -v
 
-Remove Images
-# Remove Temporal images
-docker rmi temporalio/admin-tools:latest
+# Clean up Docker images
+docker system prune -a
+```
 
-# Clean up unused images
-docker system prune
+**Remove Load Balancer**: Delete the load balancer configuration in Poridhi Lab interface.
 
-📚 What's Next?
-After completing this setup, you can:
+## 🎓 Key Takeaways
 
-Create your first workflow using Python, Go, or Java SDK
-Build activities to handle business logic
-Implement error handling and retry policies
-Explore advanced features like signals, queries, and timers
-Set up production deployment with persistent databases
+- **Temporal Server** is the central orchestration engine for workflow execution
+- **Namespaces** provide isolation between different applications and environments
+- **Web UI** offers powerful monitoring and debugging capabilities
+- **CLI tools** enable server management and administrative operations
+- **Docker Compose** simplifies deployment and development setup
+- **Load Balancers** enable external access to services in cloud environments
+- **Development mode** is perfect for learning but uses in-memory storage
 
-Recommended Learning Path
+## 🚀 Next Steps
 
-✅ Setup Complete - Temporal running in Docker
-🔄 SDK Tutorial - Choose your language and build workflows
-📖 Core Concepts - Learn about durability and reliability
-🏗️ Build Applications - Create real-world workflow examples
-🚀 Production Setup - Configure with PostgreSQL/MySQL
+- **Lab 2**: Create your first "Hello World" workflow with activities and workers
+- **Lab 3**: Learn about retry policies and timeout handling
+- **Lab 4**: Implement long-running workflows with signals
+- **Advanced**: Explore production deployment with persistent storage
 
-📖 Additional Resources
+## 📚 Additional Resources
 
-Official Documentation
-Temporal Samples
-Community Forum
-GitHub Repository
-Python SDK
-Temporal Cloud
-
-🤝 Contributing
-If you find issues or have improvements, please report them or suggest enhancements directly.
-📄 License
-This project is licensed under the MIT License - see the LICENSE file for details if applicable, or refer to Temporal's official licensing.
+- [Temporal Documentation](https://docs.temporal.io/)
+- [Architecture Overview](https://docs.temporal.io/concepts/what-is-temporal)
+- [CLI Reference](https://docs.temporal.io/cli)
+- [Web UI Guide](https://docs.temporal.io/web-ui)
+- [Community Forum](https://community.temporal.io/)

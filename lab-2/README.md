@@ -1,50 +1,81 @@
-# Hello World Workflow with Temporal - Docker Setup
+# Lab 2: Hello World Workflow with Temporal
 
-This project demonstrates how to create and run a basic "Hello World" workflow using Temporal, a durable workflow orchestration platform. The setup uses Docker Compose to run both the Temporal server and a Python worker in isolated containers.
+## 🎯 Learning Objectives
 
-## 🎯 Project Goals
+By the end of this lab, you will be able to:
+- **Understand Temporal fundamentals**: Learn the core concepts of workflows and activities
+- **Create workflow components**: Implement activities, workflows, and workers in Python
+- **Deploy with Docker**: Use Docker Compose to run Temporal server and workers
+- **Execute workflows**: Start workflows using CLI and monitor execution
+- **Observe in Web UI**: Use Temporal's dashboard to monitor workflow execution
+- **Configure load balancers**: Set up external access in Poridhi Lab environment
 
-- **Understand Workflow Basics**: Learn how Temporal workflows and activities work
-- **Set up Temporal Workflow Environment**: Run Temporal server and worker via Docker Compose
-- **Create Workflow Components**: Implement activity, workflow, and worker in Python
-- **Run Worker**: Process workflows and activities in a container
-- **Start Workflow via CLI**: Trigger workflow execution using Temporal CLI
-- **Observe in Web UI**: Monitor workflow execution in the Temporal dashboard
+## 📚 Background
 
-## 📋 Prerequisites
+### What is Temporal?
+Temporal is a **durable workflow orchestration platform** that helps you build reliable, scalable applications by managing the execution of long-running business processes.
 
-Before starting, ensure you have the following installed:
+### Key Concepts
+- **Workflow**: A durable function that orchestrates activities and manages state
+- **Activity**: A regular function that performs a single task (e.g., API call, database query)
+- **Worker**: A service that executes workflows and activities
+- **Task Queue**: A mechanism for distributing work to workers
 
-- **Docker**: Version 20.0+ 
-- **Docker Compose**: Version 2.0+
-- **Web Browser**: For accessing the Temporal Web UI
+### Why Use Temporal?
+- **Reliability**: Automatic retries and failure handling
+- **Scalability**: Distribute work across multiple workers
+- **Visibility**: Built-in monitoring and debugging tools
+- **Durability**: Workflows survive process restarts and failures
+
+## 🛠 Prerequisites
+
+### Poridhi Lab Environment:
+- Access to Poridhi Lab with VS Code interface
+- **Docker & Docker Compose**: ✅ Pre-installed in Poridhi Lab
+- **Web Browser**: For accessing the Temporal Web UI through load balancer
+- **Terminal Access**: Available through VS Code integrated terminal
 
 ### Verify Prerequisites
-
 ```bash
-# Check Docker version
+# Open VS Code terminal and verify Docker installation
 docker --version
-
-# Check Docker Compose version
 docker-compose --version
-
-# Verify Docker is running
 docker ps
 ```
 
-## 🚀 Quick Start
+## 📁 Project Structure
 
-### 1. Create Project Directory
+You'll create the following structure in your lab-2 directory:
 
-```bash
-# Create project directory
-mkdir temporal-hello-world
-cd temporal-hello-world
+```
+lab-2/
+├── docker-compose.yml      # Docker services configuration
+├── hello_world_workflow/   # Workflow implementation
+│   ├── Dockerfile          # Worker container setup
+│   ├── hello_activity.py   # Activity definition
+│   ├── hello_workflow.py   # Workflow definition
+│   ├── worker.py          # Worker service
+│   └── start_workflow.py  # Workflow starter script
+└── README.md              # This documentation
 ```
 
-### 2. Create Docker Compose File
+## 🚀 Lab Implementation
 
-Create a `docker-compose.yml` file with the following content:
+### Step 1: Set Up Project Structure
+
+Open VS Code terminal in Poridhi Lab and navigate to your lab-2 directory:
+
+```bash
+# Navigate to lab-2 directory
+cd lab-2
+
+# Create workflow directory
+mkdir hello_world_workflow
+```
+
+### Step 2: Create Docker Compose Configuration
+
+Create `docker-compose.yml` in the lab-2 directory:
 
 ```yaml
 version: '3.8'
@@ -69,15 +100,9 @@ services:
     command: ["python", "worker.py"]
 ```
 
-### 3. Create Workflow Directory and Dockerfile
+### Step 3: Create Worker Container Setup
 
-```bash
-# Create directory for workflow code
-mkdir -p hello_world_workflow
-cd hello_world_workflow
-```
-
-Create a `Dockerfile` in the `hello_world_workflow` directory:
+Create `hello_world_workflow/Dockerfile`:
 
 ```dockerfile
 FROM python:3.10-slim
@@ -87,27 +112,29 @@ WORKDIR /app
 # Install Temporal Python SDK
 RUN pip install temporalio
 
-# Copy the workflow code
+# Copy workflow code
 COPY . .
 
 # Keep container running for development
 CMD ["tail", "-f", "/dev/null"]
 ```
 
-### 4. Create Workflow Files
+### Step 4: Implement Workflow Components
 
-Inside the `hello_world_workflow` directory, create the following files:
-
-#### hello_activity.py
+#### Create Activity (`hello_world_workflow/hello_activity.py`)
 ```python
 from temporalio import activity
 
 @activity.defn
 async def say_hello(name: str) -> str:
+    """
+    Activity that generates a greeting message.
+    Activities are where you put your business logic.
+    """
     return f"Hello, {name}!"
 ```
 
-#### hello_workflow.py
+#### Create Workflow (`hello_world_workflow/hello_workflow.py`)
 ```python
 from temporalio import workflow
 from temporalio.common import RetryPolicy
@@ -119,8 +146,14 @@ with workflow.unsafe.imports_passed_through():
 
 @workflow.defn
 class HelloWorkflow:
+    """
+    Workflow that orchestrates the hello activity.
+    Workflows are durable and can survive failures.
+    """
+    
     @workflow.run
     async def run(self, name: str) -> str:
+        # Execute activity with timeout and retry policy
         return await workflow.execute_activity(
             say_hello,
             name,
@@ -129,7 +162,7 @@ class HelloWorkflow:
         )
 ```
 
-#### worker.py
+#### Create Worker (`hello_world_workflow/worker.py`)
 ```python
 import asyncio
 from temporalio.client import Client
@@ -138,36 +171,41 @@ from hello_workflow import HelloWorkflow
 from hello_activity import say_hello
 
 async def main():
+    """
+    Worker connects to Temporal server and processes workflows/activities.
+    """
     # Connect to Temporal server
     client = await Client.connect("temporal:7233", namespace="default")
     
-    # Create a worker that listens to a task queue
+    # Create worker that listens to task queue
     worker = Worker(
         client,
         task_queue="hello-task-queue",
-        workflows=[HelloWorkflow],
-        activities=[say_hello],
+        workflows=[HelloWorkflow],  # Register workflow
+        activities=[say_hello],     # Register activity
     )
     
-    # Run the worker
-    print("Starting worker...")
+    print("🚀 Worker started! Listening for workflows...")
     await worker.run()
 
 if __name__ == "__main__":
     asyncio.run(main())
 ```
 
-#### start_workflow.py (Optional)
+#### Create Workflow Starter (`hello_world_workflow/start_workflow.py`)
 ```python
 import asyncio
 from temporalio.client import Client
 from hello_workflow import HelloWorkflow
 
 async def main():
+    """
+    Script to start a workflow programmatically.
+    """
     # Connect to Temporal server
     client = await Client.connect("temporal:7233", namespace="default")
     
-    # Start the workflow
+    # Execute workflow and wait for result
     result = await client.execute_workflow(
         HelloWorkflow.run,
         "World",
@@ -175,359 +213,205 @@ async def main():
         task_queue="hello-task-queue",
     )
     
-    print(f"Workflow result: {result}")
+    print(f"✅ Workflow result: {result}")
 
 if __name__ == "__main__":
     asyncio.run(main())
 ```
 
-### 5. Start Temporal Server and Worker
-
-Navigate back to the root directory (`temporal-hello-world`) and start the services:
+### Step 5: Deploy Services in Poridhi Lab
 
 ```bash
-# Build and start both Temporal server and worker
-docker-compose up --build
-
-# Or run in background
+# Build and start Temporal server and worker
 docker-compose up --build -d
-```
 
-### 6. Verify Installation
-
-```bash
-# Check if containers are running
+# Verify containers are running
 docker-compose ps
 
-# View server and worker logs
-docker-compose logs -f
+# Check worker logs
+docker-compose logs -f worker
 ```
 
-### 7. Start the Workflow Using CLI
+### Step 6: Configure Load Balancer for Web UI Access
 
-Use the Temporal CLI inside the container to start the workflow:
-
+#### Get Network Information
 ```bash
-# Start the workflow with CLI
+# Get your lab instance IP address for load balancer configuration
+ifconfig eth0
+
+# Note the IP address (e.g., 192.168.1.100)
+```
+
+#### Set Up Load Balancer
+1. **Access Load Balancer Configuration** in Poridhi Lab interface
+2. **Create New Load Balancer**:
+   - **Enter IP**: Your lab instance eth0 IP address
+   - **Enter Port**: `8233`
+3. **Click Create**
+
+You'll receive a load balancer URL like:
+```
+https://[your-instance-id]-lb-[port].bm-southeast.lab.poridhi.io/
+```
+
+### Step 7: Execute Your First Workflow
+
+#### Option A: Using CLI in Terminal
+```bash
+# Start workflow using Temporal CLI
 docker-compose exec temporal temporal workflow start \
   --task-queue hello-task-queue \
   --type HelloWorkflow \
-  --input '{"name": "World"}' \
-  --workflow-id hello-workflow-id \
+  --input '"World"' \
+  --workflow-id hello-workflow-cli \
   --namespace default
 ```
 
-Alternatively, if you created `start_workflow.py`, you can run:
-
+#### Option B: Using Python Script
 ```bash
-# Run the starter script in the worker container
+# Run the workflow starter script
 docker-compose exec worker python start_workflow.py
 ```
 
-### 8. Access Web UI to Observe Workflow
+### Step 8: Monitor in Web UI
 
-Open your browser and navigate to: http://localhost:8233
+1. **Open Temporal Web UI**: Use your load balancer URL in a web browser
+2. **Navigate to Workflows**: Click on "Workflows" in the sidebar
+3. **Select Namespace**: Choose "default" from the dropdown
+4. **Find Your Workflow**: Look for `hello-workflow-id` or `hello-workflow-cli`
+5. **Inspect Execution**: Click on the workflow to see:
+   - Input: `"World"`
+   - Output: `"Hello, World!"`
+   - Execution history and timeline
 
-You should see the Temporal Web UI dashboard with the workflow execution:
+## 🔍 Understanding Your Workflow
 
-1. Navigate to Workflows
-2. Select the default namespace
-3. You should see a workflow with ID `hello-workflow-id`
-4. Click on it to view execution details
-5. Check Status: It should show as "Completed"
-6. View Output: Look at the "Input & Results" tab to see "Hello, World!"
+### Workflow Execution Flow
+1. **Client** submits workflow to task queue
+2. **Worker** picks up workflow task
+3. **Workflow** executes and schedules activity
+4. **Worker** picks up activity task
+5. **Activity** executes and returns result
+6. **Workflow** completes with final result
 
-### 9. Verify Workflow Execution via CLI
+### Key Components Analysis
 
-```bash
-# Check workflow status
-docker-compose exec temporal temporal workflow show \
-  --workflow-id hello-workflow-id \
-  --namespace default
+| Component | Purpose | Key Features |
+|-----------|---------|--------------|
+| **HelloWorkflow** | Orchestrates the greeting process | Durable, retry policies, timeouts |
+| **say_hello Activity** | Performs the actual greeting logic | Stateless, can be retried |
+| **Worker** | Executes workflows and activities | Scalable, polls task queue |
+| **Task Queue** | Distributes work to workers | Load balancing, fault tolerance |
 
-# Get workflow result
-docker-compose exec temporal temporal workflow query \
-  --workflow-id hello-workflow-id \
-  --namespace default
+## 🧪 Experimentation
+
+### Try These Variations
+
+#### 1. Modify the Greeting
+```python
+# In hello_activity.py, try different messages
+return f"¡Hola, {name}! Welcome to Temporal!"
 ```
 
-## 📁 Project Structure
-
-```
-temporal-hello-world/
-├── docker-compose.yml      # Docker Compose configuration
-├── README.md              # This file
-└── hello_world_workflow/
-    ├── Dockerfile          # Dockerfile for worker container
-    ├── hello_activity.py   # Activity definition
-    ├── hello_workflow.py   # Workflow definition
-    ├── worker.py          # Worker to process workflows
-    └── start_workflow.py  # Optional script to start workflow
+#### 2. Add Error Handling
+```python
+# In hello_activity.py, simulate failures
+import random
+if random.random() < 0.3:  # 30% chance of failure
+    raise Exception("Simulated failure!")
+return f"Hello, {name}!"
 ```
 
-## 🔧 Configuration Details
-
-### Docker Compose Configuration
-
-```yaml
-version: '3.8'
-
-services:
-  temporal:
-    image: temporalio/admin-tools:latest
-    ports:
-      - "7233:7233"
-      - "8233:8233"
-    entrypoint: []
-    command: ["temporal", "server", "start-dev", "--ui-port", "8233", "--ip", "0.0.0.0"]
-
-  worker:
-    build: ./hello_world_workflow
-    volumes:
-      - ./hello_world_workflow:/app
-    depends_on:
-      - temporal
-    environment:
-      - TEMPORAL_ADDRESS=temporal:7233
-    command: ["python", "worker.py"]
+#### 3. Add Multiple Activities
+```python
+# Create additional activities and chain them in your workflow
+@workflow.run
+async def run(self, name: str) -> str:
+    greeting = await workflow.execute_activity(say_hello, name, ...)
+    farewell = await workflow.execute_activity(say_goodbye, name, ...)
+    return f"{greeting} ... {farewell}"
 ```
-
-### Configuration Breakdown
-
-#### Temporal Service:
-- **Image**: `temporalio/admin-tools:latest` - Official Temporal tools image with CLI included
-- **Ports**:
-  - 7233: Temporal Server API endpoint
-  - 8233: Web UI dashboard
-- **Entrypoint**: Cleared to override default behavior
-- **Command**: Starts Temporal in development mode with Web UI
-
-#### Worker Service:
-- **Build**: Builds from local Dockerfile in `hello_world_workflow`
-- **Volumes**: Mounts local code into container for live updates
-- **Depends On**: Ensures Temporal server starts first
-- **Environment**: Sets Temporal server address for worker connection
-- **Command**: Runs the worker script to process workflows
-
-### Why These Settings?
-- `--ui-port 8233`: Specifies Web UI port for Temporal server
-- `--ip 0.0.0.0`: Binds to all interfaces (required for Docker port mapping)
-- `start-dev`: Uses in-memory database (perfect for learning)
-- `TEMPORAL_ADDRESS=temporal:7233`: Directs worker to Temporal server within Docker network
-
-## 🌐 Accessing Services
-
-### Temporal Server
-- **URL**: http://localhost:7233
-- **Purpose**: API endpoint for workflow operations
-- **Test**: `curl http://localhost:7233/api/v1/namespaces`
-
-### Temporal Web UI
-- **URL**: http://localhost:8233
-- **Purpose**: Visual dashboard for monitoring workflows
-- **Features**:
-  - View workflow executions
-  - Monitor task queues
-  - Explore workflow history
-  - Debug failed workflows
-
-## 🏷 Workflow Components
-
-### Overview of Files
-
-| File | Purpose |
-|------|---------|
-| `hello_activity.py` | Defines the say_hello activity that returns a greeting |
-| `hello_workflow.py` | Defines the HelloWorkflow workflow that calls the activity |
-| `worker.py` | Runs a worker to process workflows and activities on the hello-task-queue |
-| `start_workflow.py` | Optional script to start the workflow programmatically |
-
-### How It Works
-1. **Activity** (`say_hello`): A simple function that takes a name and returns a greeting.
-2. **Workflow** (`HelloWorkflow`): Orchestrates the activity execution with retry policies and timeouts.
-3. **Worker**: Listens on a task queue (`hello-task-queue`) for workflow and activity tasks to process.
-4. **CLI Trigger**: Starts the workflow, passing input data (e.g., `name="World"`).
-
-## 🔍 Exploring the Web UI
-
-### Dashboard Overview
-Navigate to http://localhost:8233
-- Default view shows the namespace selector
-- Key sections:
-  - Workflows: View running and completed workflows
-  - Task Queues: Monitor work distribution
-  - Namespaces: Switch between different environments
-  - Cluster: Server health and configuration
-
-### Observing Your Workflow
-1. Select Namespace: Choose default from the dropdown
-2. View Workflows: Find `hello-workflow-id` in the list
-3. Inspect Details: Click the workflow to see:
-   - Execution history
-   - Input (e.g., `{"name": "World"}`)
-   - Result (e.g., "Hello, World!")
-   - Timeline of events
-
-### Web UI Features
-
-#### Workflow Monitoring
-- View workflow execution history
-- Monitor workflow status and progress
-- Inspect activity results and failures
-- Trace workflow execution timeline
-
-#### Task Queue Management
-- Monitor task queue health (e.g., `hello-task-queue`)
-- View pending and completed tasks
-- Check worker connectivity
-- Analyze task processing metrics
-
-#### Namespace Management
-- Switch between namespaces
-- View namespace configuration
-- Monitor namespace-specific metrics
 
 ## 🔧 Troubleshooting
 
-### Common Issues and Solutions
+### Common Issues
 
-#### 1. Container Won't Start
+#### Container Not Starting
 ```bash
 # Check container status
 docker-compose ps
 
-# View detailed logs
+# View logs
 docker-compose logs temporal
 docker-compose logs worker
-
-# Restart services
-docker-compose restart
 ```
 
-#### 2. Port Conflicts
-If ports 7233 or 8233 are already in use:
-
-```yaml
-# Modify docker-compose.yml
-ports:
-  - "7234:7233"  # Use different host port
-  - "8234:8233"  # Use different host port
-```
-
-Then restart:
+#### Web UI Not Accessible
 ```bash
-docker-compose down
-docker-compose up --build
+# Verify port binding
+docker-compose port temporal 8233
+
+# Test local access
+curl http://localhost:8233
 ```
 
-#### 3. Web UI Not Accessible
-```bash
-# Verify container is running
-docker ps
-
-# Check if ports are mapped correctly
-docker port $(docker-compose ps -q temporal)
-
-# Test server connectivity
-curl http://localhost:7233/api/v1/namespaces
-```
-
-#### 4. Worker Not Processing Workflows
+#### Worker Not Processing
 ```bash
 # Check worker logs
-docker-compose logs worker
+docker-compose logs -f worker
 
-# Ensure worker is running
-docker-compose ps
-
-# Restart worker if needed
+# Restart worker
 docker-compose restart worker
 ```
 
-#### 5. Workflow Not Starting
+### Load Balancer Issues
+
+#### Load Balancer Not Working
 ```bash
-# Verify CLI command syntax
-docker-compose exec temporal temporal workflow start \
-  --task-queue hello-task-queue \
-  --type HelloWorkflow \
-  --input '{"name": "World"}' \
-  --workflow-id hello-workflow-id \
-  --namespace default
+# Verify port 8233 is bound
+netstat -tlnp | grep :8233
 
-# Check if workflow appears in list
-docker-compose exec temporal temporal workflow list --namespace default
-```
-
-### Debugging Commands
-```bash
-# Container status
-docker-compose ps
-
-# Server logs
-docker-compose logs -f temporal
-
-# Worker logs
-docker-compose logs -f worker
-
-# Execute into worker container
-docker-compose exec worker bash
-
-# Check server health
-curl -s http://localhost:7233/api/v1/cluster/health
+# Check Temporal service health
+curl http://localhost:8233
 ```
 
 ## 🧹 Cleanup
 
 ### Stop Services
 ```bash
-# Stop containers
+# Stop all containers
 docker-compose down
 
-# Stop and remove volumes (clears all data)
+# Remove volumes and networks
 docker-compose down -v
+
+# Clean up Docker images
+docker system prune -a
 ```
 
-### Remove Images
-```bash
-# Remove Temporal images
-docker rmi temporalio/admin-tools:latest
-docker rmi temporal-hello-world-worker
+**Remove Load Balancer**: Delete the load balancer configuration in Poridhi Lab interface.
 
-# Clean up unused images
-docker system prune
-```
+## 🎓 Key Takeaways
 
-## 📚 What's Next?
+- **Workflows** orchestrate business logic and are durable
+- **Activities** contain your actual business logic and can be retried
+- **Workers** execute both workflows and activities
+- **Task Queues** enable scalable work distribution
+- **Temporal Web UI** provides powerful monitoring and debugging capabilities
+- **Docker Compose** simplifies development and deployment
+- **Load Balancers** enable external access to services in cloud environments
 
-After completing this "Hello World" workflow, you can:
+## 🚀 Next Steps
 
-- **Enhance the Workflow**: Add more activities or complex logic to HelloWorkflow
-- **Experiment with Policies**: Modify retry policies and timeouts in `hello_workflow.py`
-- **Add Signals and Queries**: Enable dynamic interaction with running workflows
-- **Build Real Applications**: Apply Temporal to real-world use cases like order processing
-- **Production Setup**: Configure persistent databases (e.g., PostgreSQL) for durability
+- **Lab 3**: Learn about retry policies and timeout handling
+- **Lab 4**: Implement long-running workflows with signals
+- **Lab 5**: Explore parent-child workflow relationships
+- **Advanced**: Add queries, signals, and child workflows to this example
 
-### Recommended Learning Path
-1. ✅ Hello World Complete - Basic workflow running in Docker
-2. 🔄 Advanced Workflow Features - Signals, queries, and child workflows
-3. 📖 Error Handling - Learn about retries and compensation
-4. 🏗️ Multi-Worker Applications - Scale with multiple workers and queues
-5. 🚀 Production Deployment - Set up with persistent storage and monitoring
+## 📚 Additional Resources
 
-## 📖 Additional Resources
-
-- [Official Documentation](https://docs.temporal.io/)
+- [Temporal Documentation](https://docs.temporal.io/)
+- [Python SDK Reference](https://python.temporal.io/)
 - [Temporal Samples](https://github.com/temporalio/samples-python)
 - [Community Forum](https://community.temporal.io/)
-- [GitHub Repository](https://github.com/temporalio/temporal)
-- [Python SDK](https://github.com/temporalio/sdk-python)
-- [Temporal Cloud](https://temporal.io/cloud)
-
-## 🤝 Contributing
-
-If you find issues or have improvements, please report them or suggest enhancements directly.
-
-## 📄 License
-
-This project is licensed under the MIT License - see the LICENSE file for details if applicable, or refer to Temporal's official licensing.
 
