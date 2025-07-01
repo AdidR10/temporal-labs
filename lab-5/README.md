@@ -366,6 +366,8 @@ docker-compose ps
 # Check worker logs
 docker-compose logs -f worker
 ```
+## Run `make up` and observer the terminal output
+![make-up](https://github.com/AdidR10/temporal-labs/blob/master/lab-5/make-up.png?raw=true)
 
 #### Configure Load Balancer
 1. Get your lab instance IP: `ifconfig eth0`
@@ -404,10 +406,15 @@ Child workflow processed 5 -> 10
 
 #### What to Look For in Web UI
 
+![make-up](https://github.com/AdidR10/temporal-labs/blob/master/lab-5/dashboard.png?raw=true)
+
 ##### Parent Workflow View
 - **Status**: Completed (green checkmark)
 - **Duration**: Total execution time
 - **Child Workflows**: Links to individual child executions
+
+## Event History
+![history](https://github.com/AdidR10/temporal-labs/blob/master/lab-5/event-history.png?raw=true)
 
 ##### Child Workflow Views
 - **Successful Children**: Show as "Completed" 
@@ -481,6 +488,8 @@ docker-compose exec temporal temporal workflow start \
   --workflow-id parent-large-scale \
   --namespace default
 ```
+## Output in Dashboard
+![make-up](https://github.com/AdidR10/temporal-labs/blob/master/lab-5/output.png?raw=true)
 
 ## 🔍 Understanding Parent-Child Patterns
 
