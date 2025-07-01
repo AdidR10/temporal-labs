@@ -501,7 +501,7 @@ if __name__ == "__main__":
 ```
 
 ## So far, workflow seems like
-![arch](https://github.com/AdidR10/temporal-labs/blob/master/lab-3/lab3.1.png?raw=true)
+<img src="https://github.com/AdidR10/temporal-labs/blob/master/lab-3/lab3.1.png?raw=true" alt="arch" width="50%">
 
 ### Step 7: Deploy and Configure Load Balancer
 
