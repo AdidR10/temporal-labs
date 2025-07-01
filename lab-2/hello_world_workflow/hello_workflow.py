@@ -9,9 +9,9 @@ with workflow.unsafe.imports_passed_through():
 @workflow.defn
 class HelloWorkflow:
     @workflow.run
-    async def run(self, input_data: dict) -> str:
+    async def run(self, name: str) -> str:
         # Extract 'name' from the input dictionary, default to "Unknown" if not found
-        name = input_data.get("name", "Unknown")
+        # name = input_data.get("name", "Unknown")
         return await workflow.execute_activity(
             say_hello,
             name,

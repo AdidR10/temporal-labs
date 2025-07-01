@@ -9,14 +9,14 @@ with workflow.unsafe.imports_passed_through():
 @workflow.defn
 class GreetingWorkflow:
     @workflow.run
-    async def run(self, input_data: dict) -> str:
+    async def run(self, name: str) -> str:
         # By default activities will retry, backing off an initial interval and
         # then using a coefficient of 2 to increase the backoff each time after
         # for an unlimited amount of time and an unlimited number of attempts.
         # We'll keep those defaults except we'll set the maximum interval to
         # just 2 seconds.
         # @@@SNIPSTART python-activity-retry
-        name = input_data.get("name", "Unknown")
+        # name = input_data.get("name", "Unknown")
         return await workflow.execute_activity(
             compose_greeting,
             ComposeGreetingInput("Hello", name),
