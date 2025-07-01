@@ -119,6 +119,8 @@ docker-compose logs -f temporal
 
 Expected output: You should see Temporal server starting up with various initialization messages.
 
+![make-up](https://github.com/AdidR10/temporal-labs/blob/master/lab-1/make-up.png?raw=true)
+
 ### Step 4: Configure Load Balancer for Web UI Access
 
 #### Get Network Information
@@ -152,6 +154,8 @@ https://[your-instance-id]-lb-[port].bm-southeast.lab.poridhi.io/
      - **Schedules**: Manage scheduled workflows
      - **Task Queues**: Monitor work distribution
      - **Cluster**: Server health and configuration
+
+![dashboard](https://github.com/AdidR10/temporal-labs/blob/master/lab-1/dashboard.png?raw=true)
 
 #### Dashboard Features
 
