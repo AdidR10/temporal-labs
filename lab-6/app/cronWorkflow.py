@@ -1,25 +1,45 @@
+# shared/workflow.py
 from datetime import timedelta
 from temporalio import workflow
 
-with workflow.unsafe.imports_passed_through():
-    from .activity import say_hello
-
-@workflow.defn(name="CronWorkflow")
-class CronWorkflow:
-    @workflow.run
-    async def run(self, name: str) -> str:
-        result = await workflow.execute_activity(
-            say_hello,
-            name,
-            start_to_close_timeout=timedelta(seconds=5),
-        )
-        return f"Workflow completed with: {result}"
-
+@workflow.defn
+class CronWorkflow:  # Better name - describes what it does
+    def __init__(self):
+        self.messages = []
+        self.should_stop = False
+    
     @workflow.signal
-    async def update_name(self, new_name: str):
-        # Update the workflow state with a new name (example signal handler)
-        await workflow.execute_activity(
-            say_hello,
-            new_name,
-            start_to_close_timeout=timedelta(seconds=5),
+    async def add_message(self, message: str):
+        """External services can send data via this signal"""
+        self.messages.append(message)
+    
+    @workflow.signal  
+    async def stop_processing(self):
+        """External services can stop the workflow"""
+        self.should_stop = True
+    
+    @workflow.run
+    async def run(self, task_name: str) -> dict:
+        """
+        This workflow can be:
+        1. Scheduled with cron (e.g., daily at 9am)
+        2. Triggered manually via HTTP
+        3. Receive signals while running
+        """
+        workflow.logger.info(f"Processing task: {task_name}")
+        
+        # Wait for signals or timeout
+        await workflow.wait_condition(
+            lambda: self.should_stop or len(self.messages) >= 5,
+            timeout=timedelta(minutes=5)
         )
+        
+        # Process collected messages
+        processed_count = len(self.messages)
+        
+        return {
+            "task": task_name,
+            "messages_processed": processed_count,
+            "messages": self.messages,
+            "completed_at": str(workflow.now())
+        }

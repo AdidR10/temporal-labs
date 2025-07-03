@@ -1,46 +1,47 @@
 version: '3.8'
 
 services:
-  temporal-admin:
+  temporal:
     image: temporalio/admin-tools:latest
     ports:
       - "7233:7233"  # Temporal Server gRPC
       - "8233:8233"  # Web UI
+    entrypoint: []
     command: ["temporal", "server", "start-dev", "--ui-port", "8233", "--ip", "0.0.0.0"]
     networks:
       - temporal-net     # attach to the shared network
-    healthcheck:
-      test: ["CMD", "temporal", "--address", "localhost:7233", "operator", "cluster", "health"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
+    # healthcheck:
+    #   test: ["CMD", "temporal", "--address", "localhost:7233", "operator", "cluster", "health"]
+    #   interval: 5s
+    #   timeout: 5s
+    #   retries: 10
 
   worker:
     build: .
-    command: ["python", "-u", "app/worker.py"]
+    command: ["python", "-u", "worker.py"]
     volumes:
-      - .:/app
+      - ./app:/app/
     environment:
-      - TEMPORAL_ADDRESS=temporal-admin:7233
+      - TEMPORAL_ADDRESS=temporal:7233
       - TASK_QUEUE=cron-task-queue
     depends_on:
-      temporal-admin:
-        condition: service_healthy
+      - temporal
+        # condition: service_healthy
     networks:
       - temporal-net     # attach to the shared network
 
   api:
     build: .
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    command: uvicorn main:app --host 0.0.0.0 --port 8000
     volumes:
-      - .:/app
+      - ./app:/app/
     ports:
       - "8000:8000"
     environment:
-      - TEMPORAL_ADDRESS=temporal-admin:7233
+      - TEMPORAL_ADDRESS=temporal:7233
     depends_on:
-      temporal-admin:
-        condition: service_healthy
+      - temporal
+        # condition: service_healthy
     networks:
       - temporal-net     # attach to the shared network
 

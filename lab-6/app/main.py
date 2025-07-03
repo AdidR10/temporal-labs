@@ -1,70 +1,88 @@
-import os
-import time
-import asyncio
-from contextlib import asynccontextmanager
+# api/main.py
 from fastapi import FastAPI, HTTPException
 from temporalio.client import Client
-from CronWorkflow import CronWorkflow
+from cronWorkflow import CronWorkflow
+from datetime import datetime
 
-temporal_client = None
+app = FastAPI()
+client = None
 
-async def connect_with_retry(address: str, max_retries: int = 10, delay: int = 5):
-    """Connect to Temporal with retry logic"""
-    for attempt in range(max_retries):
-        try:
-            print(f"API: Attempting to connect to Temporal at {address} (attempt {attempt + 1}/{max_retries})")
-            client = await Client.connect(address)
-            print("API: Successfully connected to Temporal!")
-            return client
-        except Exception as e:
-            print(f"API: Connection attempt {attempt + 1} failed: {e}")
-            if attempt < max_retries - 1:
-                print(f"API: Waiting {delay} seconds before retrying...")
-                await asyncio.sleep(delay)
-            else:
-                raise
+@app.on_event("startup")
+async def startup():
+    import os
+    global client
+    temporal_address = os.getenv("TEMPORAL_ADDRESS", "temporal:7233")
+    client = await Client.connect(temporal_address)
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Startup
-    global temporal_client
-    temporal_address = os.getenv("TEMPORAL_ADDRESS", "localhost:7233")
-    temporal_client = await connect_with_retry(temporal_address)
-    
-    yield
-    
-    # Shutdown (if needed)
-    if temporal_client:
-        await temporal_client.close()
+# ... rest of the API code remains the same
 
-app = FastAPI(lifespan=lifespan)
+# 1. Regular HTTP trigger
+@app.post("/trigger-workflow/{workflow_id}")
+async def trigger_workflow(workflow_id: str, name: str = "HTTP Triggered"):
+    """Trigger workflow from HTTP endpoint"""
+    try:
+        handle = await client.start_workflow(
+            CronWorkflow.run,
+            name,
+            id=workflow_id,  
+            task_queue="lab6-queue",
+        )
+        return {"workflow_id": handle.id, "status": "started"}
+    except Exception as 
+        raise HTTPException(status_code=400, detail=str(e))
 
-@app.get("/")
-async def root():
-    return {"message": "Temporal Cron Workflow API is running!"}
+# 2. Create cron schedule
+@app.post("/schedule-workflow/{schedule_id}")
+async def schedule_workflow(schedule_id: str, cron: str = "*/2 * * * *"):
+    """Schedule workflow with cron expression"""
+    try:
+        from temporalio.client import Schedule, ScheduleAction, ScheduleSpec
+        
+        schedule_handle = await client.create_schedule(
+            schedule_id,
+            Schedule(
+                action=ScheduleAction(
+                    start_workflow=CronWorkflow.run,
+                    args=["Cron Triggered"],
+                    id=f"cron-{datetime.now().timestamp()}",
+                    task_queue="lab6-queue",
+                ),
+                spec=ScheduleSpec(
+                    cron_expressions=[cron],
+                ),
+            ),
+        )
+        return {"schedule_id": schedule_id, "cron": cron, "status": "scheduled"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
-# HTTP endpoint to start the cron workflow
-@app.post("/start-workflow/")
-async def start_workflow(name: str):
-    if not temporal_client:
-        raise HTTPException(status_code=500, detail="Temporal client not initialized")
-    
-    workflow_id = f"cron-workflow-{name}"
-    result = await temporal_client.execute_workflow(
-        CronWorkflow.run,
-        "Adid",
-        id=workflow_id,
-        task_queue=os.getenv("TASK_QUEUE", "cron-task-queue"),
-        cron_schedule="* * * * *"  # Runs every minute
-    )
-    return {"message": f"Workflow started with ID: {workflow_id}", "result": str(result)}
+# 3. Signal workflow from external service
+@app.post("/signal-workflow/{workflow_id}")
+async def signal_workflow(workflow_id: str, message: str):
+    """Send signal to running workflow"""
+    try:
+        handle = client.get_workflow_handle(workflow_id)
+        await handle.signal(CronWorkflow.update_data, message)
+        return {"workflow_id": workflow_id, "signal": "sent", "message": message}
+    except Exception as e:
+        raise HTTPException(status_code=404, detail=str(e))
 
-# HTTP endpoint to signal the workflow
-@app.post("/signal-workflow/")
-async def signal_workflow(workflow_id: str, new_name: str):
-    if not temporal_client:
-        raise HTTPException(status_code=500, detail="Temporal client not initialized")
-    
-    handle = temporal_client.get_workflow_handle(workflow_id)
-    await handle.signal(CronWorkflow.update_name, new_name)
-    return {"message": f"Sent signal to workflow {workflow_id} with new name: {new_name}"}
+@app.post("/stop-workflow/{workflow_id}")
+async def stop_workflow(workflow_id: str):
+    """Send stop signal to workflow"""
+    try:
+        handle = client.get_workflow_handle(workflow_id)
+        await handle.signal(CronWorkflow.stop_workflow)
+        return {"workflow_id": workflow_id, "signal": "stop sent"}
+    except Exception as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+@app.get("/workflow-result/{workflow_id}")
+async def get_result(workflow_id: str):
+    """Get workflow result"""
+    try:
+        handle = client.get_workflow_handle(workflow_id)
+        result = await handle.result()
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=404, detail=str(e))
