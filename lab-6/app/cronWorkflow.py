@@ -31,8 +31,8 @@ class CronWorkflow:  # Better name - describes what it does
         # Wait for signals or timeout
         await workflow.wait_condition(
             lambda: self.should_stop or len(self.messages) >= 5,
-            timeout=timedelta(minutes=5)
-        )
+            timeout=timedelta(seconds=30)
+        )   
         
         # Process collected messages
         processed_count = len(self.messages)

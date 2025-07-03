@@ -28,22 +28,24 @@ async def trigger_workflow(workflow_id: str, name: str = "HTTP Triggered"):
             task_queue="lab6-queue",
         )
         return {"workflow_id": handle.id, "status": "started"}
-    except Exception as 
+    except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 # 2. Create cron schedule
 @app.post("/schedule-workflow/{schedule_id}")
-async def schedule_workflow(schedule_id: str, cron: str = "*/2 * * * *"):
+async def schedule_workflow(schedule_id: str, cron: str = "* * * * *"):
     """Schedule workflow with cron expression"""
+    
     try:
-        from temporalio.client import Schedule, ScheduleAction, ScheduleSpec
-        
-        schedule_handle = await client.create_schedule(
+        from datetime import datetime
+        from temporalio.client import Schedule, ScheduleActionStartWorkflow, ScheduleSpec
+
+        await client.create_schedule(
             schedule_id,
             Schedule(
-                action=ScheduleAction(
-                    start_workflow=CronWorkflow.run,
-                    args=["Cron Triggered"],
+                action=ScheduleActionStartWorkflow(
+                    CronWorkflow.run,
+                    "Cron Triggered",
                     id=f"cron-{datetime.now().timestamp()}",
                     task_queue="lab6-queue",
                 ),
@@ -56,13 +58,24 @@ async def schedule_workflow(schedule_id: str, cron: str = "*/2 * * * *"):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+@app.delete("/schedule-workflow/{schedule_id}")
+async def delete_schedule(schedule_id: str):
+    """Delete (stop) a cron schedule"""
+    try:
+        handle = client.get_schedule_handle(schedule_id)
+        await handle.delete()
+        return {"schedule_id": schedule_id, "status": "deleted"}
+    except Exception as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
 # 3. Signal workflow from external service
 @app.post("/signal-workflow/{workflow_id}")
 async def signal_workflow(workflow_id: str, message: str):
     """Send signal to running workflow"""
     try:
         handle = client.get_workflow_handle(workflow_id)
-        await handle.signal(CronWorkflow.update_data, message)
+        await handle.signal(CronWorkflow.add_message, message)
         return {"workflow_id": workflow_id, "signal": "sent", "message": message}
     except Exception as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -72,7 +85,7 @@ async def stop_workflow(workflow_id: str):
     """Send stop signal to workflow"""
     try:
         handle = client.get_workflow_handle(workflow_id)
-        await handle.signal(CronWorkflow.stop_workflow)
+        await handle.signal(CronWorkflow.stop_processing)
         return {"workflow_id": workflow_id, "signal": "stop sent"}
     except Exception as e:
         raise HTTPException(status_code=404, detail=str(e))
