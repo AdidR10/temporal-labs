@@ -1,5 +1,5 @@
-from temporalio import workflow # type: ignore
-from temporalio.common import RetryPolicy # type: ignore
+from temporalio import workflow
+from temporalio.common import RetryPolicy
 from datetime import timedelta
 
 # Import the activity
@@ -8,10 +8,14 @@ with workflow.unsafe.imports_passed_through():
 
 @workflow.defn
 class HelloWorkflow:
+    """
+    Workflow that orchestrates the hello activity.
+    Workflows are durable and can survive failures.
+    """
+    
     @workflow.run
-    async def run(self, input_data: dict) -> str:
-        # Extract 'name' from the input dictionary, default to "Unknown" if not found
-        name = input_data.get("name", "Unknown")
+    async def run(self, name: str) -> str:
+        # Execute activity with timeout and retry policy
         return await workflow.execute_activity(
             say_hello,
             name,
