@@ -1,4 +1,5 @@
 import asyncio
+import json
 from temporalio.client import Client # type: ignore
 from parent_and_child_workflow import ParentWorkflow
 
@@ -14,7 +15,13 @@ async def main():
         id="parent-and-child-workflow-id",
         task_queue="parent-and-child-task-queue",
     )
-    print(result)
+    
+    # Pretty print the result as JSON
+    print("\n" + "="*50)
+    print("WORKFLOW EXECUTION RESULT")
+    print("="*50)
+    print(json.dumps(result, indent=2))
+    print("="*50)
     print(f"Workflow execution completed!")
 
 if __name__ == "__main__":
