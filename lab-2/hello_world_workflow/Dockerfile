@@ -12,4 +12,4 @@ RUN pip install -r requirements.txt
 
 # Keep container running for development
 # CMD ["tail", "-f", "/dev/null"]
-CMD ["python", "-u", "worker.py"] 
+# CMD ["python", "-u", "worker.py"] 

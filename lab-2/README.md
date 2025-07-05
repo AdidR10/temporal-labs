@@ -53,6 +53,7 @@ lab-2/
 ├── hello_world_workflow/   # Workflow implementation
 │   ├── Dockerfile          # Worker container setup
 │   ├── hello_activity.py   # Activity definition
+|   ├── requriements.txt    
 │   ├── hello_workflow.py   # Workflow definition
 │   ├── worker.py          # Worker service
 │   └── start_workflow.py  # Workflow starter script
