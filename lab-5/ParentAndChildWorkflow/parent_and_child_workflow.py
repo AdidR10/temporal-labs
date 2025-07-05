@@ -38,5 +38,7 @@ class ParentWorkflow:
                 logging.error(f"Child workflow for value {values[idx]} failed: {result}")
                 # Optionally, append a default value or skip
             else:
+                #ADDRESS LATER: why logging.info is not showing any worker logs? For now, use print()
+                print(f"Child workflow for value {values[idx]} completed with result: {result}")
                 results.append(result)
         return results

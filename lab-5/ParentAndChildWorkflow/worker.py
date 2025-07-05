@@ -2,21 +2,25 @@ import asyncio
 from temporalio.client import Client
 from temporalio.worker import Worker
 
-# Import the workflow and activity
+# Import both parent and child workflows
 from parent_and_child_workflow import ParentWorkflow, ChildWorkflow
 
 async def main():
+    """Worker that processes both parent and child workflows."""
+    
     # Connect to Temporal server
     client = await Client.connect("temporal:7233", namespace="default")
     
-    # Create a worker that listens to a task queue
+    # Create worker with both workflow types
     worker = Worker(
         client,
         task_queue="parent-and-child-task-queue",
-        workflows=[ParentWorkflow, ChildWorkflow],
+        workflows=[ParentWorkflow, ChildWorkflow],  # Register both workflow types
     )
     
-    print("Starting worker...")
+    print("🔄 Parent-Child Workflow Worker started!")
+    print("📋 Listening on task queue: parent-and-child-task-queue")
+    print("🎯 Ready to process parent and child workflows...")
     await worker.run()
 
 if __name__ == "__main__":
