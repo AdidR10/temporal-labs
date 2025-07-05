@@ -22,6 +22,7 @@ services:
     # command: ["python", "-u", "worker.py"]
     networks:
       - temporal-net     # attach to the shared network
+    command: ["python", "-u", "worker.py"]
 
 networks:
   temporal-net:          # declares the network so Docker Compose creates it

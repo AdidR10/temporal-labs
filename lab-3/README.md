@@ -129,7 +129,7 @@ services:
       - temporal
     environment:
       - TEMPORAL_ADDRESS=temporal:7233
-    command: ["python", "worker.py"]
+    command: ["python", "-u" ,"worker.py"]
 ```
 
 ### Step 3: Create Enhanced Container Setup
@@ -149,7 +149,7 @@ RUN pip install -r requirements.txt
 COPY . .
 
 # Keep container running for development
-CMD ["tail", "-f", "/dev/null"]
+# CMD ["tail", "-f", "/dev/null"]
 ```
 
 Create `retryAndTimeoutHandlingWorkflow/requirements.txt`:
@@ -167,6 +167,7 @@ import random
 import time
 from temporalio import activity
 from typing import Optional
+import asyncio
 
 @activity.defn
 async def unreliable_greeting_activity(name: str, failure_rate: float = 0.7) -> str:
@@ -238,9 +239,6 @@ async def slow_processing_activity(data: str, processing_time: int = 10) -> str:
     result = f"Processed: {data} (completed after {processing_time}s)"
     print(f"✅ Slow processing completed: {result}")
     return result
-
-# Add this import at the top
-import asyncio
 ```
 
 ### Step 5: Create Workflow with Retry Policies and Timeouts

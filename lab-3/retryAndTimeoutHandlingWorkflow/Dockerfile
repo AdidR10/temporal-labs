@@ -2,7 +2,7 @@ FROM python:3.10-slim
 
 WORKDIR /app
 
-ENV PYTHONUNBUFFERED=1
+# ENV PYTHONUNBUFFERED=1
 
 # Install Temporal Python SDK
 # RUN pip install temporalio
@@ -13,5 +13,5 @@ COPY . .
 # Install dependencies
 RUN pip install -r requirements.txt
 
-# Keep container running for development
-CMD ["python", "worker.py"] 
+
+# CMD ["python", "-u", "worker.py"] 
