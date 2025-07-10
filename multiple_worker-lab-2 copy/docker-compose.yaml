@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  temporal:
+    image: temporalio/admin-tools:latest
+    ports:
+      - "7233:7233"
+      - "8233:8233"
+    entrypoint: []
+    command: ["temporal", "server", "start-dev", "--ui-port", "8233", "--ip", "0.0.0.0"]
+
+  worker1:
+    build: ./hello_world_workflow
+    volumes:
+      - ./hello_world_workflow:/app
+    depends_on:
+      - temporal  
+    environment:
+      - TEMPORAL_ADDRESS=temporal:7233
+    command: ["python", "-u", "worker.py"]
+
+  worker2:
+    build: ./hello_world_workflow
+    volumes:
+      - ./hello_world_workflow:/app
+    depends_on:
+      - temporal  
+    environment:
+      - TEMPORAL_ADDRESS=temporal:7233
+    command: ["python", "-u", "worker.py"]
+    
+  worker3:
+    build: ./hello_world_workflow
+    volumes:
+      - ./hello_world_workflow:/app
+    depends_on:
+      - temporal  
+    environment:
+      - TEMPORAL_ADDRESS=temporal:7233
+    command: ["python", "-u", "worker.py"]
