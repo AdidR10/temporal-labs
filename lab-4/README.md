@@ -24,6 +24,9 @@ A Temporal workflow example that demonstrates a long-running counter with signal
    docker-compose up --build
    ```
 
+## Expected Terminal View
+![arch](./make-up.png?raw=true)
+
 3. **Run the workflow:**
    ```bash
    docker-compose exec worker python start_workflow.py
@@ -31,6 +34,10 @@ A Temporal workflow example that demonstrates a long-running counter with signal
 
 4. **Access Temporal Web UI:**
    Open [http://localhost:8233](http://localhost:8233) and note the workflow ID.
+
+### Note the workflow ID
+![id](./running-workflow.png?raw=true)
+
 
 ## Workflow Operations
 
@@ -40,11 +47,17 @@ docker-compose exec temporal tctl --namespace default workflow signal \
   --workflow_id <workflow-id> --name increment
 ```
 
+## Send the signal and get the cli output
+![signal](./signal.png?raw=true)
+
 ### Query Counter Value
 ```bash
 docker-compose exec temporal temporal workflow query \
   --workflow-id <workflow-id> --type get_count
 ```
+
+## Try with query and get the cli output
+![signal](./query.png?raw=true)
 
 ## Notes
 - The workflow runs indefinitely and prints the counter every 10 seconds
@@ -416,6 +429,10 @@ docker-compose exec temporal temporal workflow query \
    - **WorkflowTaskCompleted** events
    - **Signal** events for each increment
    - **Query** events for each state request
+
+## Event History
+![signal](./event-history.png?raw=true)
+
 
 #### Workflow Details
 - **Input and Results**: Shows workflow parameters

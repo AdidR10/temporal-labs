@@ -367,6 +367,9 @@ docker-compose ps
 docker-compose logs -f worker
 ```
 
+## Run `make up` and observer the terminal output
+![make-up](./make-up.png?raw=true)
+
 #### Configure Load Balancer
 1. Get your lab instance IP: `ifconfig eth0`
 2. **Create Load Balancer** in Poridhi Lab interface:
@@ -404,10 +407,15 @@ Child workflow processed 5 -> 10
 
 #### What to Look For in Web UI
 
+![make-up](./dashboard.png?raw=true)
+
 ##### Parent Workflow View
 - **Status**: Completed (green checkmark)
 - **Duration**: Total execution time
 - **Child Workflows**: Links to individual child executions
+
+## Event History
+![history](./event-history.png?raw=true)
 
 ##### Child Workflow Views
 - **Successful Children**: Show as "Completed" 

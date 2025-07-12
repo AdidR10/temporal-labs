@@ -10,6 +10,9 @@ By the end of this lab, you will be able to:
 - **Observe in Web UI**: Use Temporal's dashboard to monitor workflow execution
 - **Configure load balancers**: Set up external access in Poridhi Lab environment
 
+## Architectural Point of View
+![arch](./lab2.png?raw=true)
+
 ## 📚 Background
 
 ### What is Temporal?
@@ -236,6 +239,9 @@ docker-compose ps
 docker-compose logs -f worker
 ```
 
+## Run `make up` to start the Temporal server and worker
+![arch](./make-up-test.png?raw=true)
+
 ### Step 6: Configure Load Balancer for Web UI Access
 
 #### Get Network Information
@@ -287,6 +293,9 @@ docker-compose exec worker python start_workflow.py
    - Input: `"World"`
    - Output: `"Hello, World!"`
    - Execution history and timeline
+
+## Expected dashboard view
+![arch](./dashboard.png?raw=true)
 
 ## 🔍 Understanding Your Workflow
 

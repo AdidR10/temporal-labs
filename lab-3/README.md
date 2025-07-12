@@ -19,6 +19,9 @@ By the end of this lab, you will be able to:
 - **Monitor retry behavior**: Observe retry attempts and failure patterns in Temporal Web UI
 - **Optimize resilience**: Design fault-tolerant workflows that handle transient failures gracefully
 
+## Architectural Point of View
+![arch](./lab3.2.png?raw=true)
+
 ## 📚 Background
 
 ### Why Retry and Timeout Handling Matters
@@ -495,6 +498,9 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
+## So far, workflow seems like
+<img src="./lab3.1.png?raw=true" alt="arch" width="50%">
+
 ### Step 7: Deploy and Configure Load Balancer
 
 ```bash
@@ -507,6 +513,8 @@ docker-compose ps
 # Check worker logs
 docker-compose logs -f worker
 ```
+## Run `make up` to start the Temporal server and worker
+![arch](./make-up.png?raw=true)
 
 #### Configure Load Balancer
 1. Get your lab instance IP: `ifconfig eth0`
@@ -555,6 +563,9 @@ docker-compose exec temporal temporal workflow start \
 | **Completed** | All retries successful | Green checkmark |
 | **Failed** | All retry attempts exhausted | Red X mark |
 | **Timed Out** | Activity exceeded timeout limits | Clock icon |
+
+## Expected Dashboard View
+![arch](./dashboard.png?raw=true)
 
 #### Detailed Investigation
 1. **Click on any workflow** to see detailed execution
